@@ -4,7 +4,6 @@ from __future__ import annotations
 import ast
 import pathlib
 
-
 TASKS_DIR = pathlib.Path(__file__).resolve().parent.parent / "app" / "tasks"
 
 VALID_STATES = {"uploaded", "parsing", "chunking", "embedding", "indexed", "failed"}
