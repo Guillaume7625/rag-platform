@@ -11,6 +11,7 @@ on:
     paths:
       - "apps/**"
       - "workers/**"
+  workflow_dispatch:
 
 jobs:
   api-tests:
