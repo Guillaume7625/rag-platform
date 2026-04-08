@@ -7,7 +7,12 @@ OCR fallback for scanned PDFs is left as a TODO hook.
 from __future__ import annotations
 
 import io
+import logging
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -30,12 +35,29 @@ def parse_document(content: bytes, mime_type: str, filename: str) -> list[Parsed
             from docling.document_converter import DocumentConverter  # type: ignore
 
             converter = DocumentConverter()
-            result = converter.convert(io.BytesIO(content))
+
+            # Primary: use DocumentStream if available
+            try:
+                from docling.datamodel.base_models import DocumentStream  # type: ignore
+
+                source = DocumentStream(name=filename, stream=io.BytesIO(content))
+                result = converter.convert(source)
+            except ImportError:
+                # Fallback: write to tempfile and pass the path
+                suffix = Path(filename).suffix or ".bin"
+                with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                    tmp.write(content)
+                    tmp.flush()
+                    tmp_path = tmp.name
+                try:
+                    result = converter.convert(source=tmp_path)
+                finally:
+                    Path(tmp_path).unlink(missing_ok=True)
+
             md = result.document.export_to_markdown()
             return _split_markdown(md)
-        except Exception:
-            # Fall through to plain-text handling.
-            pass
+        except Exception as exc:
+            log.warning("docling_parse_failed: %s – falling back to plain-text", exc)
 
     if mime_type.startswith("text/") or mime_type in {
         "application/json",

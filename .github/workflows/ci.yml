@@ -4,18 +4,20 @@ on:
   push:
     branches: [main, "claude/**"]
     paths:
-      - "rag-platform/**"
+      - "apps/**"
+      - "workers/**"
       - ".github/workflows/**"
   pull_request:
     paths:
-      - "rag-platform/**"
+      - "apps/**"
+      - "workers/**"
 
 jobs:
   api-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: rag-platform/apps/api
+        working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: rag-platform/workers/ingestion
+        working-directory: workers/ingestion
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,14 +57,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: rag-platform/apps/web
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: rag-platform/apps/web/package.json
+          cache-dependency-path: apps/web/package.json
       - name: Install
         run: npm install --no-audit --no-fund
       - name: Lint

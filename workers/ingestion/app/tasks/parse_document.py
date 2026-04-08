@@ -26,6 +26,12 @@ def parse_document_task(self, document_id: str) -> str:
                 log.warning("parse_document.not_found", document_id=document_id)
                 return "missing"
 
+            # Set state to 'parsing' before doing work.
+            db.execute(
+                text("UPDATE documents SET state = 'parsing' WHERE id = :id"),
+                {"id": document_id},
+            )
+
             storage_key, mime_type, name = row
             content = get_object_bytes(storage_key)
             sections = parse_document(content, mime_type or "application/octet-stream", name)
@@ -44,24 +50,24 @@ def parse_document_task(self, document_id: str) -> str:
                 {"id": document_id},
             )
 
-        # Hand off.  We pass the parsed sections directly to avoid re-parsing.
-        celery_app.send_task(
-            "ingestion.chunk_document",
-            args=[
-                document_id,
-                version_id,
-                [
-                    {
-                        "order": s.order,
-                        "page": s.page,
-                        "section_title": s.section_title,
-                        "text": s.text,
-                    }
-                    for s in sections
+            # Hand off. We pass the parsed sections directly to avoid re-parsing.
+            celery_app.send_task(
+                "ingestion.chunk_document",
+                args=[
+                    document_id,
+                    version_id,
+                    [
+                        {
+                            "order": s.order,
+                            "page": s.page,
+                            "section_title": s.section_title,
+                            "text": s.text,
+                        }
+                        for s in sections
+                    ],
                 ],
-            ],
-        )
-        return "ok"
+            )
+            return "ok"
     except Exception as e:
         log.exception("parse_document.failed", error=str(e))
         with session_scope() as db:

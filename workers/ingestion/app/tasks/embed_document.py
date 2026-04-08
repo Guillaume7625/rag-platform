@@ -22,12 +22,7 @@ def embed_document_task(self, document_id: str, version_id: str, chunks: list[di
             for c, dense in zip(chunks, denses, strict=True)
         ]
 
-        with session_scope() as db:
-            db.execute(
-                text("UPDATE documents SET state = 'indexed' WHERE id = :id"),
-                {"id": document_id},
-            )
-
+        # Do NOT set state='indexed' here. Only index_document may do that.
         celery_app.send_task(
             "ingestion.index_document",
             args=[document_id, version_id, enriched],
