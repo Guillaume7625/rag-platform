@@ -2,72 +2,74 @@ name: rag-platform CI
 
 on:
   push:
-    branches: [main, "claude/**"]
-    paths:
-      - "rag-platform/**"
-      - ".github/workflows/**"
-  pull_request:
-    paths:
-      - "rag-platform/**"
+      branches: [main, "claude/**"]
+          paths:
+                - "apps/**"
+                      - "workers/**"
+                            - ".github/workflows/**"
+                              pull_request:
+                                  paths:
+                                        - "apps/**"
+                                              - "workers/**"
 
-jobs:
-  api-tests:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rag-platform/apps/api
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install
-        run: |
-          pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Lint
-        run: ruff check app tests
-      - name: Tests
-        run: pytest -q
-
-  worker-tests:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rag-platform/workers/ingestion
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install
-        run: |
-          pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Lint
-        run: ruff check app tests
-      - name: Tests
-        run: pytest -q
-
-  web-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: rag-platform/apps/web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: rag-platform/apps/web/package.json
-      - name: Install
-        run: npm install --no-audit --no-fund
-      - name: Lint
-        run: npm run lint || true
-      - name: Build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+                                              jobs:
+                                                api-tests:
+                                                    runs-on: ubuntu-latest
+                                                        defaults:
+                                                              run:
+                                                                      working-directory: apps/api
+                                                                          steps:
+                                                                                - uses: actions/checkout@v4
+                                                                                      - uses: actions/setup-python@v5
+                                                                                              with:
+                                                                                                        python-version: "3.12"
+                                                                                                                  cache: pip
+                                                                                                                        - name: Install
+                                                                                                                                run: |
+                                                                                                                                          pip install --upgrade pip
+                                                                                                                                                    pip install -e ".[dev]"
+                                                                                                                                                          - name: Lint
+                                                                                                                                                                  run: ruff check app tests
+                                                                                                                                                                        - name: Tests
+                                                                                                                                                                                run: pytest -q
+                                                                                                                                                                                
+                                                                                                                                                                                  worker-tests:
+                                                                                                                                                                                      runs-on: ubuntu-latest
+                                                                                                                                                                                          defaults:
+                                                                                                                                                                                                run:
+                                                                                                                                                                                                        working-directory: workers/ingestion
+                                                                                                                                                                                                            steps:
+                                                                                                                                                                                                                  - uses: actions/checkout@v4
+                                                                                                                                                                                                                        - uses: actions/setup-python@v5
+                                                                                                                                                                                                                                with:
+                                                                                                                                                                                                                                          python-version: "3.12"
+                                                                                                                                                                                                                                                    cache: pip
+                                                                                                                                                                                                                                                          - name: Install
+                                                                                                                                                                                                                                                                  run: |
+                                                                                                                                                                                                                                                                            pip install --upgrade pip
+                                                                                                                                                                                                                                                                                      pip install -e ".[dev]"
+                                                                                                                                                                                                                                                                                            - name: Lint
+                                                                                                                                                                                                                                                                                                    run: ruff check app tests
+                                                                                                                                                                                                                                                                                                          - name: Tests
+                                                                                                                                                                                                                                                                                                                  run: pytest -q
+                                                                                                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                                                                                    web-build:
+                                                                                                                                                                                                                                                                                                                        runs-on: ubuntu-latest
+                                                                                                                                                                                                                                                                                                                            defaults:
+                                                                                                                                                                                                                                                                                                                                  run:
+                                                                                                                                                                                                                                                                                                                                          working-directory: apps/web
+                                                                                                                                                                                                                                                                                                                                              steps:
+                                                                                                                                                                                                                                                                                                                                                    - uses: actions/checkout@v4
+                                                                                                                                                                                                                                                                                                                                                          - uses: actions/setup-node@v4
+                                                                                                                                                                                                                                                                                                                                                                  with:
+                                                                                                                                                                                                                                                                                                                                                                            node-version: "20"
+                                                                                                                                                                                                                                                                                                                                                                                      cache: npm
+                                                                                                                                                                                                                                                                                                                                                                                                cache-dependency-path: apps/web/package.json
+                                                                                                                                                                                                                                                                                                                                                                                                      - name: Install
+                                                                                                                                                                                                                                                                                                                                                                                                              run: npm install --no-audit --no-fund
+                                                                                                                                                                                                                                                                                                                                                                                                                    - name: Lint
+                                                                                                                                                                                                                                                                                                                                                                                                                            run: npm run lint || true
+                                                                                                                                                                                                                                                                                                                                                                                                                                  - name: Build
+                                                                                                                                                                                                                                                                                                                                                                                                                                          run: npm run build
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  env:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                            NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
