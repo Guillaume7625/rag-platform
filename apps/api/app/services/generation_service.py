@@ -1,6 +1,7 @@
 """Generation step: packs context, calls the LLM, produces citations."""
 from __future__ import annotations
 
+import logging
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.db.models.chunk import DocumentChunkParent
 from app.schemas.chat import Citation
 from app.services.llm_provider import get_llm
+
+log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are a careful assistant. Answer the user's question using ONLY the "
@@ -65,13 +68,20 @@ class GenerationService:
             page = payload.get("page")
             chunk_id = payload.get("chunk_id") or r["id"]
 
+            if not doc_id:
+                log.warning("citation.missing_document_id", payload_keys=list(payload.keys()))
+                continue
+            if not self._is_uuid(chunk_id):
+                log.warning("citation.invalid_chunk_id", chunk_id=chunk_id)
+                continue
+
             context_blocks.append(f"[{i}] (source: {doc_name}, page: {page})\n{text}")
             citations.append(
                 Citation(
-                    document_id=uuid.UUID(doc_id) if doc_id else uuid.uuid4(),
+                    document_id=uuid.UUID(doc_id),
                     document_name=doc_name,
                     page=page,
-                    chunk_id=uuid.UUID(chunk_id) if self._is_uuid(chunk_id) else uuid.uuid4(),
+                    chunk_id=uuid.UUID(chunk_id),
                     excerpt=(payload.get("content") or "")[:280],
                 )
             )
