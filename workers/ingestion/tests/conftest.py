@@ -33,9 +33,9 @@ from sqlalchemy.pool import StaticPool
 # NOTE: importing app.db here is safe — SQLAlchemy is lazy and will not
 # attempt to connect to Postgres until a query is issued.
 from app import db as app_db
-from app.services import indexer as indexer_module
 from app.services import parser as parser_module
-from app.services import storage as storage_module
+from app.tasks import index_document as index_task_module
+from app.tasks import parse_document as parse_task_module
 from app.worker import celery_app
 
 # Minimal subset of the Postgres schema, translated to SQLite-compatible DDL.
@@ -135,9 +135,14 @@ def lifecycle_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[LifecycleEnv]:
     monkeypatch.setattr(app_db, "engine", engine)
     monkeypatch.setattr(app_db, "SessionLocal", session_factory)
 
-    # Neutralise MinIO.
+    # IMPORTANT: the task modules use ``from app.services.X import Y``,
+    # which captures ``Y`` as a local name at import time. Patching the
+    # service module alone has no effect — we must patch the name in
+    # each task module namespace where it is actually resolved.
+
+    # Neutralise MinIO inside parse_document_task.
     monkeypatch.setattr(
-        storage_module, "get_object_bytes", lambda key: b"irrelevant-test-bytes"
+        parse_task_module, "get_object_bytes", lambda key: b"irrelevant-test-bytes"
     )
 
     # Deterministic parser output: one section with a short text.
@@ -151,14 +156,15 @@ def lifecycle_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[LifecycleEnv]:
             )
         ]
 
-    monkeypatch.setattr(parser_module, "parse_document", _fake_parse)
+    monkeypatch.setattr(parse_task_module, "parse_document", _fake_parse)
 
-    # Neutralise Qdrant. ``get_client`` must return *something* because
-    # ``ensure_collection`` / ``upsert_points`` take it as a parameter.
-    monkeypatch.setattr(indexer_module, "get_client", lambda: object())
-    monkeypatch.setattr(indexer_module, "ensure_collection", lambda client: None)
+    # Neutralise Qdrant inside index_document_task. ``get_client`` must
+    # return *something* because ``ensure_collection`` /
+    # ``upsert_points`` take it as a parameter.
+    monkeypatch.setattr(index_task_module, "get_client", lambda: object())
+    monkeypatch.setattr(index_task_module, "ensure_collection", lambda client: None)
     monkeypatch.setattr(
-        indexer_module, "upsert_points", lambda client, points: None
+        index_task_module, "upsert_points", lambda client, points: None
     )
 
     # Capture (not dispatch) Celery task chaining. The smoke test replays

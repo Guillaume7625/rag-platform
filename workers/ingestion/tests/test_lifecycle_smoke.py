@@ -28,7 +28,7 @@ import uuid
 import pytest
 from sqlalchemy import text
 
-from app.services import parser as parser_module
+from app.tasks import parse_document as parse_task_module
 from app.tasks.chunk_document import chunk_document_task
 from app.tasks.embed_document import embed_document_task
 from app.tasks.index_document import index_document_task
@@ -138,7 +138,10 @@ def test_lifecycle_failure_path_sets_failed_state(
     def _boom(content, mime_type, filename):  # noqa: ARG001
         raise RuntimeError("boom-from-smoke-test")
 
-    monkeypatch.setattr(parser_module, "parse_document", _boom)
+    # Patch at the task module level: parse_document_task does
+    # ``from app.services.parser import parse_document`` at import time,
+    # so the name lives in ``app.tasks.parse_document``.
+    monkeypatch.setattr(parse_task_module, "parse_document", _boom)
 
     # Also neutralise self.retry so .apply() fails fast with the original
     # exception instead of recursively re-running the task in eager mode.
