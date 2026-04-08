@@ -1,0 +1,17 @@
+[Unit]
+Description=RAG Platform (docker compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+WorkingDirectory=/opt/rag-platform
+EnvironmentFile=/etc/rag-platform/secrets.env
+ExecStart=/usr/bin/docker compose -f /opt/rag-platform/infra/prod/docker-compose.prod.yml --env-file /etc/rag-platform/secrets.env up -d
+ExecStop=/usr/bin/docker compose -f /opt/rag-platform/infra/prod/docker-compose.prod.yml --env-file /etc/rag-platform/secrets.env down
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target

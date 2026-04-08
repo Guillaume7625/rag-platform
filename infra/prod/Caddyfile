@@ -1,0 +1,50 @@
+# Caddyfile for rag.marinenationale.cloud
+# Caddy auto-provisions and renews the TLS certificate via Let's Encrypt.
+
+{
+	email {$ACME_EMAIL}
+	# Uncomment during testing to hit the LE staging environment instead:
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Backend: strip the /api prefix before forwarding to FastAPI.
+	# /api/auth/login -> api:8000/auth/login, etc.
+	handle_path /api/* {
+		reverse_proxy api:8000 {
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+
+	# Expose health + metrics at the root (optional, for uptime checks).
+	handle /health {
+		reverse_proxy api:8000
+	}
+	handle /metrics {
+		reverse_proxy api:8000
+	}
+
+	# Everything else goes to the Next.js standalone server.
+	handle {
+		reverse_proxy web:3000
+	}
+
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}

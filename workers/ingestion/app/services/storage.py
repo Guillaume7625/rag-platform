@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+from minio import Minio
+
+from app.config import settings
+
+
+def get_minio() -> Minio:
+    return Minio(
+        settings.minio_endpoint,
+        access_key=settings.minio_access_key,
+        secret_key=settings.minio_secret_key,
+        secure=settings.minio_secure,
+    )
+
+
+def get_object_bytes(key: str) -> bytes:
+    client = get_minio()
+    resp = client.get_object(settings.minio_bucket, key)
+    try:
+        return resp.read()
+    finally:
+        resp.close()
+        resp.release_conn()
