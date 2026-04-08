@@ -1,4 +1,5 @@
 """Tests for the 5-state document lifecycle contract."""
+
 import ast
 import pathlib
 
