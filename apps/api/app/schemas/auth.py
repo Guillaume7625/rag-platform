@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
@@ -22,3 +22,13 @@ class UserOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    """Fields a user can update on their own profile via PATCH /auth/me.
+
+    Intentionally narrow for Phase 3A: only full_name. Password change,
+    email change, and role management are explicitly out of scope.
+    """
+
+    full_name: str = Field(min_length=1, max_length=255)

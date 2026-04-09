@@ -30,3 +30,12 @@ class ConversationOut(BaseModel):
 
 class ConversationDetail(ConversationOut):
     messages: list[MessageOut] = Field(default_factory=list)
+
+
+class ConversationUpdate(BaseModel):
+    """Fields a user can update on one of their own conversations.
+
+    Phase 3A scope: rename only. No reassignment, no archiving.
+    """
+
+    title: str = Field(min_length=1, max_length=512)
