@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     root_path: str = ""
 
+    # Explicit allowlist of browser origins allowed to call the API. Parsed
+    # from env as a JSON array, e.g. CORS_ORIGINS=["http://localhost:3000"].
+    # Default matches the dev web container; production must override.
+    cors_origins: list[str] = ["http://localhost:3000"]
+
     database_url: str = "postgresql+psycopg://rag:rag@postgres:5432/rag"
     redis_url: str = "redis://redis:6379/0"
 

@@ -18,6 +18,7 @@ class CurrentUser:
     email: str
     tenant_id: uuid.UUID
     role: str
+    full_name: str | None = None
 
     @property
     def allowed_roles(self) -> list[str]:
@@ -53,4 +54,5 @@ def get_current_user(
         email=user.email,
         tenant_id=uuid.UUID(tenant_id),
         role=role,
+        full_name=user.full_name,
     )

@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, get_current_user
+from app.db.models.user import User
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, TokenResponse, UserOut
+from app.schemas.auth import LoginRequest, TokenResponse, UserOut, UserUpdate
 from app.services.auth_service import get_auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -26,12 +27,37 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse
 @router.get("/me", response_model=UserOut)
 def me(
     current: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> UserOut:
+    # full_name is populated on CurrentUser by get_current_user so we avoid a
+    # second DB round-trip on this hot path.
     return UserOut(
         id=current.id,
         email=current.email,
-        full_name=None,
+        full_name=current.full_name,
+        tenant_id=current.tenant_id,
+        role=current.role,
+    )
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(
+    payload: UserUpdate,
+    current: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserOut:
+    user = db.query(User).filter(User.id == current.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="user not found",
+        )
+    user.full_name = payload.full_name
+    db.commit()
+    db.refresh(user)
+    return UserOut(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
         tenant_id=current.tenant_id,
         role=current.role,
     )
