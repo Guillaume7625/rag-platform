@@ -46,3 +46,6 @@ class RateLimiter:
 # 10 login attempts per minute per IP.
 login_limiter = RateLimiter(max_requests=10, window_seconds=60)
 
+# 5 register attempts per minute per IP.
+register_limiter = RateLimiter(max_requests=5, window_seconds=60)
+

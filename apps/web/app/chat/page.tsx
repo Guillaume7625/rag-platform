@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, MessageSquare, ChevronDown, ChevronUp, Plus, History } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { api } from '@/lib/api-client';
 
@@ -19,6 +19,8 @@ type Msg = {
   confidence?: number;
   mode_used?: string;
 };
+
+type ConvSummary = { id: string; title: string | null; created_at: string };
 
 function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100);
@@ -66,11 +68,22 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>();
+  const [conversations, setConversations] = useState<ConvSummary[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.listConversations().then(setConversations).catch(() => {});
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
+
+  function newConversation() {
+    setMessages([]);
+    setConversationId(undefined);
+  }
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
@@ -92,10 +105,11 @@ export default function ChatPage() {
           mode_used: res.mode_used,
         },
       ]);
+      api.listConversations().then(setConversations).catch(() => {});
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: `Error: ${(err as Error).message}` },
+        { role: 'assistant', content: `Erreur : ${(err as Error).message}` },
       ]);
     } finally {
       setLoading(false);
@@ -105,6 +119,49 @@ export default function ChatPage() {
   return (
     <AppShell>
       <div className="mx-auto flex h-[calc(100vh-3rem)] max-w-3xl flex-col">
+        {/* Header with history */}
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50"
+            >
+              <History size={14} />
+              Historique ({conversations.length})
+            </button>
+          </div>
+          <button
+            onClick={newConversation}
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-all hover:bg-brand-700"
+          >
+            <Plus size={14} />
+            Nouvelle conversation
+          </button>
+        </div>
+
+        {/* Conversation history panel */}
+        {showHistory && conversations.length > 0 && (
+          <div className="mb-3 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm animate-slide-up">
+            {conversations.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setConversationId(c.id);
+                  setMessages([]);
+                  setShowHistory(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-slate-50"
+              >
+                <MessageSquare size={14} className="shrink-0 text-slate-400" />
+                <span className="truncate text-slate-700">{c.title || 'Conversation sans titre'}</span>
+                <span className="ml-auto shrink-0 text-xs text-slate-400">
+                  {new Date(c.created_at).toLocaleDateString('fr-FR')}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div
           ref={scrollRef}
           className="flex-1 space-y-4 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -114,9 +171,9 @@ export default function ChatPage() {
               <div className="mb-4 rounded-2xl bg-gradient-to-br from-brand-50 to-brand-100 p-4">
                 <MessageSquare size={28} className="text-brand-600" />
               </div>
-              <p className="text-sm font-medium text-slate-700">Ask anything about your documents</p>
+              <p className="text-sm font-medium text-slate-700">Posez une question sur vos documents</p>
               <p className="mt-1 max-w-xs text-xs text-slate-400">
-                Answers are grounded in your uploaded files with cited sources and confidence scores.
+                Les réponses sont fondées sur vos fichiers importés avec les sources citées et un score de confiance.
               </p>
             </div>
           )}
@@ -165,7 +222,7 @@ export default function ChatPage() {
         <form onSubmit={onSend} className="mt-4 flex gap-2">
           <input
             className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-            placeholder="Ask a question..."
+            placeholder="Posez votre question..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
@@ -175,7 +232,7 @@ export default function ChatPage() {
             className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-brand-700 hover:shadow-md disabled:opacity-50"
             disabled={loading || !input.trim()}
           >
-            <Send size={16} className="transition-transform group-hover:translate-x-0.5" />
+            <Send size={16} />
           </button>
         </form>
       </div>

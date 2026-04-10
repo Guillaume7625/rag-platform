@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, get_current_user
-from app.core.rate_limit import login_limiter
+from app.core.rate_limit import login_limiter, register_limiter
 from app.core.security import hash_password
 from app.db.models.membership import Membership
 from app.db.models.tenant import Tenant
@@ -15,7 +15,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
+def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    register_limiter.check(request)
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise HTTPException(
