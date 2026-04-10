@@ -3,12 +3,41 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, get_current_user
 from app.core.rate_limit import login_limiter
+from app.core.security import hash_password
+from app.db.models.membership import Membership
+from app.db.models.tenant import Tenant
 from app.db.models.user import User
 from app.db.session import get_db
-from app.schemas.auth import LoginRequest, TokenResponse, UserOut, UserUpdate
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut, UserUpdate
 from app.services.auth_service import get_auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    existing = db.query(User).filter(User.email == payload.email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="email already registered",
+        )
+    user = User(
+        email=payload.email,
+        password_hash=hash_password(payload.password),
+        full_name=payload.full_name,
+    )
+    db.add(user)
+    db.flush()
+    tenant = Tenant(name=f"{payload.email}'s workspace", slug=str(user.id)[:8])
+    db.add(tenant)
+    db.flush()
+    membership = Membership(user_id=user.id, tenant_id=tenant.id, role="admin")
+    db.add(membership)
+    db.commit()
+    svc = get_auth_service()
+    token = svc.issue_token(user, membership)
+    return TokenResponse(access_token=token)
 
 
 @router.post("/login", response_model=TokenResponse)
