@@ -10,6 +10,7 @@ from app.db.models.retrieval_trace import RetrievalTrace
 from app.db.session import get_db
 from app.schemas.chat import ChatQueryRequest, ChatQueryResponse
 from app.services.generation_service import get_generation
+from app.services.query_expansion_service import get_query_expansion
 from app.services.query_router_service import decide_mode, decompose
 from app.services.rerank_service import get_reranker
 from app.services.retrieval_service import get_retrieval
@@ -31,6 +32,11 @@ def chat_query(
     generator = get_generation()
 
     queries = decompose(payload.query) if mode == "deep" else [payload.query]
+    expander = get_query_expansion()
+    expanded = expander.expand(payload.query, n=settings.query_expansion_count)
+    queries = queries + expanded
+
+    t_embed = time.time()
     retrieved_all: list[dict] = []
     for q in queries:
         for c in retrieval.retrieve(
@@ -40,6 +46,7 @@ def chat_query(
             tag_filters=payload.filters.get("tags") if payload.filters else None,
         ):
             retrieved_all.append({"id": c.id, "score": c.score, "payload": c.payload})
+    t_search = time.time()
 
     # Dedup by id, keep max score.
     dedup: dict[str, dict] = {}
@@ -51,13 +58,17 @@ def chat_query(
         : settings.retrieval_top_k
     ]
 
+    t_rerank = time.time()
     reranked = reranker.rerank(payload.query, candidates)[: settings.rerank_top_k]
+    t_rerank_end = time.time()
     top_context = reranked[: settings.context_top_k]
 
     large = mode == "deep" or bool(
         top_context and top_context[0].get("rerank_score", 0.0) < 0.25
     )
+    t_gen = time.time()
     gen = generator.pack_and_generate(db, payload.query, top_context, large=large)
+    t_gen_end = time.time()
 
     # Persist conversation + message.
     conv = None
@@ -103,6 +114,13 @@ def chat_query(
             reranked=[
                 {"id": r["id"], "rerank_score": r.get("rerank_score")} for r in reranked[:20]
             ],
+            embed_ms=int((t_search - t_embed) * 1000),
+            search_ms=int((t_rerank - t_search) * 1000),
+            rerank_ms=int((t_rerank_end - t_rerank) * 1000),
+            generate_ms=int((t_gen_end - t_gen) * 1000),
+            rerank_cache_hit=reranker.last_cache_hit,
+            confidence=gen.confidence,
+            expansion_queries=expanded if expanded else None,
         )
     )
     db.commit()

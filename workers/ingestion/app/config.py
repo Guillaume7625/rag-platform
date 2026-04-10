@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     chunk_child_overlap: int = 40
     chunk_parent_tokens: int = 1000
 
+    # --- IDF ---
+    idf_enabled: bool = True
+
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"
     celery_concurrency: int = 2
