@@ -17,7 +17,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 libmagic1 poppler-utils tesseract-ocr tesseract-ocr-fra \
+    libpq5 libmagic1 poppler-utils tesseract-ocr tesseract-ocr-fra libgl1 libglib2.0-0 \
     curl tini \
   && rm -rf /var/lib/apt/lists/* \
   && useradd -m -u 1000 -s /bin/bash rag
