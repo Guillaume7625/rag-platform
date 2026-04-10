@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { api } from '@/lib/api-client';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('demo@rag.local');
-  const [password, setPassword] = useState('demo1234');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
