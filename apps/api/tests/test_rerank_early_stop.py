@@ -4,15 +4,16 @@ from __future__ import annotations
 from unittest.mock import patch, MagicMock
 
 import fakeredis
+import pytest
 
 from app.services.rerank_service import RerankService
 
 
-def _make_service() -> RerankService:
+def _make_service(provider: str = "voyage") -> RerankService:
     svc = RerankService.__new__(RerankService)
-    svc.model_name = "rerank-2-lite"
+    svc.model_name = "rerank-2-lite" if provider == "voyage" else "rerank-v3.5"
     svc.api_key = "test-key"
-    svc.provider = "voyage"
+    svc.provider = provider
     svc.last_cache_hit = False
     svc._redis = fakeredis.FakeRedis(decode_responses=True)
     return svc
@@ -26,9 +27,10 @@ def _candidates(n: int) -> list[dict]:
 
 
 class TestRerankEarlyStop:
-    @patch.object(RerankService, "_voyage_call")
-    def test_early_stop_skips_second_pass(self, mock_call) -> None:
-        svc = _make_service()
+    @pytest.mark.parametrize("provider", ["voyage", "cohere"])
+    @patch.object(RerankService, "_api_call")
+    def test_early_stop_skips_second_pass(self, mock_call, provider) -> None:
+        svc = _make_service(provider)
         cands = _candidates(20)
 
         # First pass returns a dominant top score.
@@ -45,13 +47,13 @@ class TestRerankEarlyStop:
             mock_settings.redis_url = ""
             result = svc.rerank("query", cands)
 
-        # Only one Voyage call (the first pass).
         assert mock_call.call_count == 1
         assert result[0]["rerank_score"] == 0.95
 
-    @patch.object(RerankService, "_voyage_call")
-    def test_no_early_stop_calls_second_pass(self, mock_call) -> None:
-        svc = _make_service()
+    @pytest.mark.parametrize("provider", ["voyage", "cohere"])
+    @patch.object(RerankService, "_api_call")
+    def test_no_early_stop_calls_second_pass(self, mock_call, provider) -> None:
+        svc = _make_service(provider)
         cands = _candidates(20)
 
         # First pass: scores too close to trigger early stop.

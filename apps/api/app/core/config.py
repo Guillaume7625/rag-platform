@@ -39,8 +39,9 @@ class Settings(BaseSettings):
     voyage_api_key: str = ""
 
     # --- Reranker ---
-    reranker_provider: str = "voyage"  # voyage | bge | lexical
-    reranker_model: str = "rerank-2-lite"
+    reranker_provider: str = "cohere"  # cohere | voyage | lexical
+    reranker_model: str = "rerank-v3.5"
+    cohere_api_key: str = ""
 
     # --- LLM ---
     llm_provider: str = "anthropic"  # anthropic | openai
