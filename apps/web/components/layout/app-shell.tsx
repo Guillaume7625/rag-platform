@@ -6,11 +6,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { MessageSquare, FileText, Settings, LogOut, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
+import { ErrorBoundary } from '@/components/error-boundary';
 
 const NAV = [
   { href: '/chat', label: 'Chat', icon: MessageSquare },
   { href: '/documents', label: 'Documents', icon: FileText },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/settings', label: 'Paramètres', icon: Settings },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -52,7 +53,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const sidebar = (
     <div className="flex h-full w-60 flex-col bg-slate-900">
-      {/* Header */}
       <div className="flex items-center gap-2 px-5 py-5">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
           R
@@ -60,7 +60,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <span className="text-sm font-semibold text-white">RAG Platform</span>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 space-y-0.5 px-3">
         {NAV.map((n) => {
           const Icon = n.icon;
@@ -84,7 +83,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
       </nav>
 
-      {/* User footer */}
       <div className="border-t border-white/10 px-3 py-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
@@ -92,14 +90,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-slate-200">
-              {user?.full_name || 'User'}
+              {user?.full_name || 'Utilisateur'}
             </div>
             <div className="truncate text-xs text-slate-500">{user?.email}</div>
           </div>
           <button
             onClick={handleLogout}
             className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-white/10 hover:text-red-400"
-            title="Sign out"
+            title="Se déconnecter"
           >
             <LogOut size={16} />
           </button>
@@ -110,12 +108,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:block">
-        {sidebar}
-      </aside>
+      <aside className="hidden md:block">{sidebar}</aside>
 
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <>
           <div
@@ -128,9 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col">
-        {/* Mobile header */}
         <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -140,7 +132,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
           <span className="text-sm font-semibold">RAG Platform</span>
         </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       </div>
     </div>
   );

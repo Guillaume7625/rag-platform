@@ -4,12 +4,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'RAG Platform',
-  description: 'Multi-tenant document intelligence with citation-grounded answers',
+  description: 'Intelligence documentaire avec recherche hybride et réponses citées',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body>
         <Providers>{children}</Providers>
       </body>

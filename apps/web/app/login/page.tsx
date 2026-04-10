@@ -22,7 +22,7 @@ export default function LoginPage() {
       window.localStorage.setItem('rag_token', res.access_token);
       router.push('/chat');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'login failed');
+      setError(err instanceof Error ? err.message : 'Identifiants incorrects');
     } finally {
       setLoading(false);
     }
@@ -31,13 +31,12 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-6">
       <div className="w-full max-w-sm animate-slide-up">
-        {/* Logo */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-lg shadow-brand-600/25">
             R
           </div>
-          <h1 className="text-xl font-semibold text-slate-900">Welcome back</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to your account</p>
+          <h1 className="text-xl font-semibold text-slate-900">Bon retour</h1>
+          <p className="mt-1 text-sm text-slate-500">Connectez-vous à votre compte</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
@@ -48,12 +47,12 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
-              placeholder="you@company.com"
+              placeholder="vous@entreprise.com"
               required
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Password</label>
+            <label className="text-sm font-medium text-slate-700">Mot de passe</label>
             <input
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               value={password}
@@ -76,16 +75,16 @@ export default function LoginPage() {
             ) : (
               <>
                 <LogIn size={16} />
-                Sign in
+                Se connecter
               </>
             )}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <span className="text-sm text-slate-500">No account? </span>
+          <span className="text-sm text-slate-500">Pas encore de compte ? </span>
           <Link href="/register" className="text-sm font-medium text-brand-600 hover:text-brand-700">
-            Create one
+            Créer un compte
           </Link>
         </div>
       </div>
