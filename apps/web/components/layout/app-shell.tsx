@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
     api.me().then((me) => {
-      setUser({ email: me.email, full_name: (me as any).full_name ?? null });
+      setUser({ email: me.email, full_name: me.full_name ?? null });
       setReady(true);
     }).catch(() => {
       window.localStorage.removeItem('rag_token');
