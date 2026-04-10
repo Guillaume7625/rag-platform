@@ -21,8 +21,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({ detail: res.statusText }))) as ApiError;
-    throw new Error(body.detail || 'request failed');
+    const body = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = body.detail;
+    const msg = typeof detail === 'string'
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((d: any) => d.msg || d.message || JSON.stringify(d)).join(', ')
+        : 'request failed';
+    throw new Error(msg);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
