@@ -58,6 +58,8 @@ def parse_document(content: bytes, mime_type: str, filename: str) -> list[Parsed
             return _split_markdown(md)
         except Exception as exc:
             log.warning("docling_parse_failed: %s – falling back to plain-text", exc)
+            if mime_type == "application/pdf":
+                raise RuntimeError(f"PDF parsing failed: {exc}") from exc
 
     if mime_type.startswith("text/") or mime_type in {
         "application/json",
@@ -74,6 +76,7 @@ def parse_document(content: bytes, mime_type: str, filename: str) -> list[Parsed
 
 def _split_markdown(text: str) -> list[ParsedSection]:
     """Split on markdown headings into coarse sections."""
+    text = text.replace("\x00", "")
     sections: list[ParsedSection] = []
     current_title: str | None = None
     current_lines: list[str] = []
