@@ -1,7 +1,8 @@
 """Parent / child chunking.
 
-Token counts are approximated by whitespace words * 1.3 to avoid shipping a
-tokenizer in the worker.  Swap with tiktoken or the BGE tokenizer in prod.
+Token counts are approximated by len(text) / 3.8 (character-based heuristic)
+to avoid shipping a tokenizer in the worker.  Works better than word-based
+estimates for non-Latin scripts (e.g. CJK, Arabic) and agglutinative languages.
 """
 from __future__ import annotations
 
@@ -29,16 +30,18 @@ class ChildChunk:
 
 
 def _tok(text: str) -> int:
-    # Rough approximation.
-    return int(len(text.split()) * 1.3)
+    # Character-based approximation (~3.8 chars per token on average).
+    return max(1, int(len(text) / 3.8))
 
 
 def _split_by_tokens(text: str, target_tokens: int, overlap_tokens: int = 0) -> list[str]:
     words = text.split()
     if not words:
         return []
-    approx_words_per_chunk = max(1, int(target_tokens / 1.3))
-    overlap_words = max(0, int(overlap_tokens / 1.3))
+    avg_word_len = sum(len(w) for w in words) / len(words) if words else 5.0
+    chars_per_chunk = target_tokens * 3.8
+    approx_words_per_chunk = max(1, int(chars_per_chunk / (avg_word_len + 1)))
+    overlap_words = max(0, int((overlap_tokens * 3.8) / (avg_word_len + 1)))
     out: list[str] = []
     i = 0
     while i < len(words):

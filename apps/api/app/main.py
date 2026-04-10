@@ -4,12 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, chat, conversations, documents, health
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.telemetry import setup_telemetry
 
 setup_logging()
 
-app = FastAPI(title="RAG Platform API", version="0.1.0", root_path=settings.root_path)
+app = FastAPI(title="RAG Platform API", version="0.2.0", root_path=settings.root_path)
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
