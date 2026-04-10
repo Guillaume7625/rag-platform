@@ -12,7 +12,7 @@ def test_sparse_with_idf_changes_values() -> None:
 
     # With all-low IDF, values should be scaled down.
     assert len(with_idf["values"]) == len(without_idf["values"])
-    for v_idf, v_plain in zip(with_idf["values"], without_idf["values"]):
+    for v_idf, v_plain in zip(with_idf["values"], without_idf["values"], strict=True):
         assert v_idf < v_plain
 
 

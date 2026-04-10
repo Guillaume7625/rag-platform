@@ -1,9 +1,6 @@
 """Tests for the embedding cache in EmbeddingService."""
 from __future__ import annotations
 
-import json
-from unittest.mock import patch
-
 import fakeredis
 
 from app.services.embedding_service import EmbeddingService

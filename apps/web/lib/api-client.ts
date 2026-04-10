@@ -43,6 +43,7 @@ export const api = {
     request<{
       id: string;
       email: string;
+      full_name: string | null;
       tenant_id: string;
       role: string;
     }>('/auth/me'),

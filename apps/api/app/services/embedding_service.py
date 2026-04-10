@@ -126,7 +126,6 @@ class EmbeddingService:
         """Read-only IDF table from Redis, cached 300s in-process."""
         if not self._redis:
             return None
-        import time
         now = time.monotonic()
         if self._idf_table and (now - self._idf_ts) < 300:
             return self._idf_table
