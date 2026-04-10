@@ -22,6 +22,10 @@ def embed_document_task(self, document_id: str, version_id: str, chunks: list[di
             for c, dense in zip(chunks, denses, strict=True)
         ]
 
+        # Update corpus IDF stats (one call per document).
+        full_text = " ".join(contents)
+        embedder.update_idf_stats(full_text)
+
         # Do NOT set state='indexed' here. Only index_document may do that.
         celery_app.send_task(
             "ingestion.index_document",

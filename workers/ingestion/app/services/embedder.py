@@ -32,7 +32,9 @@ def _tokenize(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN_RE.findall(text) if len(t) > 1]
 
 
-def _sparse_from_text(text: str) -> dict[str, list]:
+def _sparse_from_text(
+    text: str, idf_table: dict[int, float] | None = None,
+) -> dict[str, list]:
     tokens = _tokenize(text)
     if not tokens:
         return {"indices": [], "values": []}
@@ -42,8 +44,19 @@ def _sparse_from_text(text: str) -> dict[str, list]:
         counts[idx] += 1
     n = len(tokens)
     indices = list(counts.keys())
-    values = [1.0 + (counts[i] / n) for i in indices]
+    # TF * IDF when available; falls back to TF-only (idf=1.0) otherwise.
+    idf = idf_table or {}
+    values = [(1.0 + (counts[i] / n)) * idf.get(i, 1.0) for i in indices]
     return {"indices": indices, "values": values}
+
+
+def _unique_token_indices(text: str) -> set[int]:
+    """Return the set of hashed sparse indices present in the text."""
+    tokens = _tokenize(text)
+    return {
+        int(hashlib.md5(tok.encode("utf-8")).hexdigest()[:8], 16) % _SPARSE_VOCAB_SIZE
+        for tok in tokens
+    }
 
 
 def _fallback_dense(text: str, dim: int) -> list[float]:
@@ -66,6 +79,10 @@ class Embedder:
         self.model_name = settings.embedding_model
         self.api_key = settings.voyage_api_key
         self.provider = settings.embedding_provider
+        self._idf_service = None
+        if settings.idf_enabled:
+            from app.services.idf_service import get_idf_service
+            self._idf_service = get_idf_service()
 
     def _is_voyage_configured(self) -> bool:
         return self.provider == "voyage" and bool(self.api_key)
@@ -113,7 +130,16 @@ class Embedder:
         return out
 
     def embed_sparse(self, text: str) -> dict[str, list]:
-        return _sparse_from_text(text)
+        idf_table = self._idf_service.get_idf_table() if self._idf_service else None
+        return _sparse_from_text(text, idf_table=idf_table)
+
+    def update_idf_stats(self, text: str) -> None:
+        """Update corpus DF counts for the unique tokens in *text*."""
+        if self._idf_service:
+            try:
+                self._idf_service.update_from_document(_unique_token_indices(text))
+            except Exception:
+                log.warning("embedder.idf_update_failed")
 
 
 _embedder: Embedder | None = None

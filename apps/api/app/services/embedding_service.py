@@ -2,9 +2,8 @@
 
 Production: dense vectors come from Voyage AI (voyage-3 by default).
 Voyage only ships dense embeddings, so the sparse vector used by the hybrid
-Qdrant query is computed locally with a lightweight TF + token-hash scheme.
-It is not full BM25 (no global IDF), but it captures keyword overlap and is
-cheap, deterministic, and identical between API and worker.
+Qdrant query is computed locally with a lightweight TF + token-hash scheme
+weighted by corpus IDF when available.
 
 Dev fallback: if VOYAGE_API_KEY is empty, fall back to a deterministic
 hash-based pseudo-embedding so the platform still boots without credentials.
@@ -12,7 +11,9 @@ hash-based pseudo-embedding so the platform still boots without credentials.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+import time
 from collections import Counter
 from typing import Any, Literal
 
@@ -33,7 +34,9 @@ def _tokenize(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN_RE.findall(text) if len(t) > 1]
 
 
-def _sparse_from_text(text: str) -> dict[str, list]:
+def _sparse_from_text(
+    text: str, idf_table: dict[int, float] | None = None,
+) -> dict[str, list]:
     tokens = _tokenize(text)
     if not tokens:
         return {"indices": [], "values": []}
@@ -43,8 +46,9 @@ def _sparse_from_text(text: str) -> dict[str, list]:
         counts[idx] += 1
     n = len(tokens)
     indices = list(counts.keys())
-    # Log-tf normalization. Real BM25 would multiply by IDF (corpus stats).
-    values = [1.0 + (counts[i] / n) for i in indices]
+    # TF * IDF when available; falls back to TF-only (idf=1.0) otherwise.
+    idf = idf_table or {}
+    values = [(1.0 + (counts[i] / n)) * idf.get(i, 1.0) for i in indices]
     return {"indices": indices, "values": values}
 
 
@@ -69,6 +73,19 @@ class EmbeddingService:
         self.model_name = settings.embedding_model
         self.api_key = settings.voyage_api_key
         self.provider = settings.embedding_provider
+        self._idf_table: dict[int, float] = {}
+        self._idf_ts: float = 0.0
+        self._redis = None
+        self._cache_ttl = settings.embedding_cache_ttl
+        self._cache_enabled = settings.embedding_cache_enabled
+        if settings.idf_enabled or self._cache_enabled:
+            try:
+                import redis as _redis
+                self._redis = _redis.Redis.from_url(
+                    settings.redis_url, decode_responses=True,
+                )
+            except Exception:
+                log.warning("embedding.redis_init_failed")
 
     def _is_voyage_configured(self) -> bool:
         return self.provider == "voyage" and bool(self.api_key)
@@ -105,14 +122,52 @@ class EmbeddingService:
             log.error("embedding.voyage_call_failed", error=str(e), model=self.model_name)
             return [_fallback_dense(t, self.dim) for t in texts]
 
+    def _get_idf_table(self) -> dict[int, float] | None:
+        """Read-only IDF table from Redis, cached 300s in-process."""
+        if not self._redis:
+            return None
+        import time
+        now = time.monotonic()
+        if self._idf_table and (now - self._idf_ts) < 300:
+            return self._idf_table
+        try:
+            raw = self._redis.hgetall("idf:global")
+            self._idf_table = {int(k): float(v) for k, v in raw.items()}
+            self._idf_ts = now
+        except Exception:
+            log.warning("embedding.idf_read_failed")
+        return self._idf_table or None
+
     def embed_sparse(self, text: str) -> dict[str, list]:
-        return _sparse_from_text(text)
+        return _sparse_from_text(text, idf_table=self._get_idf_table())
 
     def embed(self, text: str, *, input_type: InputType = "document") -> dict[str, Any]:
-        return {
+        if self._cache_enabled and self._redis:
+            cache_key = f"emb:{hashlib.sha256((text + '|' + input_type).encode()).hexdigest()[:32]}"
+            try:
+                cached = self._redis.get(cache_key)
+                if cached:
+                    result = json.loads(cached)
+                    result["cache_hit"] = True
+                    return result
+            except Exception:
+                pass
+
+        result = {
             "dense": self.embed_dense(text, input_type=input_type),
             "sparse": self.embed_sparse(text),
         }
+
+        if self._cache_enabled and self._redis:
+            try:
+                self._redis.setex(
+                    cache_key, self._cache_ttl, json.dumps(result),
+                )
+            except Exception:
+                pass
+
+        result["cache_hit"] = False
+        return result
 
 
 _embedder: EmbeddingService | None = None

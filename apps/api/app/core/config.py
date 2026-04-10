@@ -49,10 +49,30 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     openai_api_key: str = ""
 
+    # --- IDF ---
+    idf_enabled: bool = True
+
+    # --- Embedding cache ---
+    embedding_cache_enabled: bool = True
+    embedding_cache_ttl: int = 3600
+
+    # --- Query expansion ---
+    query_expansion_enabled: bool = True
+    query_expansion_count: int = 2
+
+    # --- Reranker cache ---
+    rerank_cache_enabled: bool = True
+    rerank_cache_ttl: int = 1800
+    rerank_early_stop_threshold: float = 0.85
+    rerank_first_pass_size: int = 10
+
     # --- Retrieval ---
     retrieval_top_k: int = 50
     rerank_top_k: int = 20
     context_top_k: int = 6
+    context_token_budget: int = 4000
+    context_score_threshold: float = 0.15
+    context_max_parents: int = 10
 
     # --- Celery ---
     celery_broker_url: str = "redis://redis:6379/1"

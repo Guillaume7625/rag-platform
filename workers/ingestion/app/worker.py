@@ -21,6 +21,7 @@ celery_app = Celery(
         "app.tasks.embed_document",
         "app.tasks.index_document",
         "app.tasks.delete_document",
+        "app.tasks.rebuild_idf",
     ],
 )
 

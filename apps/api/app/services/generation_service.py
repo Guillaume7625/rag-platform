@@ -8,6 +8,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.models.chunk import DocumentChunkParent
 from app.schemas.chat import Citation
 from app.services.llm_provider import get_llm
@@ -32,6 +33,64 @@ class GenerationService:
     def __init__(self) -> None:
         self.llm = get_llm()
 
+    def _select_context(
+        self,
+        reranked: list[dict[str, Any]],
+        db: Session,
+    ) -> list[dict[str, Any]]:
+        """Select parent chunks within token budget, dedup by parent_id."""
+        selected: list[dict[str, Any]] = []
+        seen_parents: set[str] = set()
+        budget = settings.context_token_budget
+        accumulated = 0
+
+        for r in reranked:
+            pid = r["payload"].get("parent_id")
+            if pid in seen_parents:
+                continue
+
+            # Check score threshold (skip very low-scoring candidates).
+            score = r.get("rerank_score", 0.0)
+            if selected and score < settings.context_score_threshold:
+                break
+
+            # Look up parent token count from DB if available.
+            token_count = 0
+            if pid:
+                parent = (
+                    db.query(DocumentChunkParent.token_count)
+                    .filter(DocumentChunkParent.id == uuid.UUID(pid))
+                    .first()
+                )
+                token_count = parent[0] if parent else 200  # estimate
+
+            # Respect budget (always include at least one).
+            if selected and accumulated + token_count > budget:
+                break
+
+            seen_parents.add(pid)
+            selected.append(r)
+            accumulated += token_count
+
+            if len(selected) >= settings.context_max_parents:
+                break
+
+        return selected
+
+    @staticmethod
+    def _compute_confidence(reranked: list[dict[str, Any]]) -> float:
+        """3-signal confidence: top score, spread, and high-scoring density."""
+        if not reranked:
+            return 0.0
+        scores = [r.get("rerank_score", 0.0) for r in reranked]
+        top_score = max(scores)
+        mean_score = sum(scores) / len(scores)
+        spread = top_score - mean_score
+        high_count = sum(1 for s in scores if s > 0.5 * top_score)
+        density = min(high_count, 5) / 5.0
+        raw = top_score * 0.5 + spread * 0.3 + density * 0.2
+        return max(0.0, min(1.0, raw))
+
     def pack_and_generate(
         self,
         db: Session,
@@ -39,15 +98,8 @@ class GenerationService:
         reranked: list[dict[str, Any]],
         large: bool = False,
     ) -> GenerationResult:
-        # Collapse child chunks to unique parent contexts, preserving order.
-        selected: list[dict[str, Any]] = []
-        seen_parents: set[str] = set()
-        for r in reranked:
-            pid = r["payload"].get("parent_id")
-            if pid in seen_parents:
-                continue
-            seen_parents.add(pid)
-            selected.append(r)
+        # Dynamic context selection within token budget.
+        selected = self._select_context(reranked, db)
 
         # Load parent content + document metadata from Postgres.
         parent_ids = [uuid.UUID(r["payload"]["parent_id"]) for r in selected if r["payload"].get("parent_id")]
@@ -92,12 +144,7 @@ class GenerationService:
         )
         answer = self.llm.complete(system=SYSTEM_PROMPT, user=user_prompt, large=large)
 
-        # Confidence heuristic: top rerank_score normalized, clipped to [0,1].
-        if reranked:
-            top = max(r.get("rerank_score", 0.0) for r in reranked)
-            confidence = max(0.0, min(1.0, top / 2.0))
-        else:
-            confidence = 0.0
+        confidence = self._compute_confidence(reranked)
 
         return GenerationResult(answer=answer, citations=citations, confidence=confidence)
 
