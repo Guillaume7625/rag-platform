@@ -57,8 +57,24 @@ def parse_document(content: bytes, mime_type: str, filename: str) -> list[Parsed
             md = result.document.export_to_markdown()
             return _split_markdown(md)
         except Exception as exc:
-            log.warning("docling_parse_failed: %s – falling back to plain-text", exc)
+            log.warning("docling_parse_failed: %s – trying pypdf fallback", exc)
             if mime_type == "application/pdf":
+                try:
+                    from pypdf import PdfReader
+
+                    reader = PdfReader(io.BytesIO(content))
+                    pages: list[ParsedSection] = []
+                    for i, page in enumerate(reader.pages):
+                        text = page.extract_text() or ""
+                        if text.strip():
+                            pages.append(
+                                ParsedSection(order=i, page=i + 1, section_title=None, text=text.strip())
+                            )
+                    if pages:
+                        log.info("pypdf_fallback_ok: %d pages extracted", len(pages))
+                        return pages
+                except Exception as pdf_exc:
+                    log.warning("pypdf_fallback_failed: %s", pdf_exc)
                 raise RuntimeError(f"PDF parsing failed: {exc}") from exc
 
     if mime_type.startswith("text/") or mime_type in {
