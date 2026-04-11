@@ -68,7 +68,7 @@ class GenerationService:
         ordered: list[dict[str, Any]] = []
         max_depth = max((len(v) for v in doc_buckets.values()), default=0)
         for depth in range(max_depth):
-            for doc_id, chunks in doc_buckets.items():
+            for _doc_id, chunks in doc_buckets.items():
                 if depth < len(chunks):
                     ordered.append(chunks[depth])
 

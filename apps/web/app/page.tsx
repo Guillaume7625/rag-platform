@@ -33,7 +33,7 @@ export default function HomePage() {
   useEffect(() => {
     const token = window.localStorage.getItem('rag_token');
     if (token) {
-      router.push('/chat');
+      router.push('/dashboard');
     } else {
       setChecked(true);
     }

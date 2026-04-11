@@ -21,7 +21,7 @@ export default function RegisterPage() {
     try {
       const res = await api.register(email, password, fullName || undefined);
       window.localStorage.setItem('rag_token', res.access_token);
-      router.push('/chat');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
     } finally {

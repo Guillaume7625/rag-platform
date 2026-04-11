@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, chat, conversations, documents, evaluation, health
+from app.api.routes import auth, chat, conversations, documents, evaluation, health, stats
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.security_headers import SecurityHeadersMiddleware
@@ -26,5 +26,6 @@ app.include_router(documents.router)
 app.include_router(chat.router)
 app.include_router(conversations.router)
 app.include_router(evaluation.router)
+app.include_router(stats.router)
 
 setup_telemetry(app)
