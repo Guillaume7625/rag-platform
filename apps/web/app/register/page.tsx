@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState(false);
   const router = useRouter();
 
   async function onSubmit(e: React.FormEvent) {
@@ -19,13 +20,40 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       const res = await api.register(email, password, fullName || undefined);
-      window.localStorage.setItem('rag_token', res.access_token);
-      router.push('/dashboard');
+      if (res.access_token) {
+        window.localStorage.setItem('rag_token', res.access_token);
+        router.push('/dashboard');
+      } else {
+        setPending(true);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
+      const msg = err instanceof Error ? err.message : "Erreur lors de l'inscription";
+      if (msg.includes('attente') || msg.includes('pending')) {
+        setPending(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6">
+        <div className="max-w-sm text-center space-y-4">
+          <div className="text-5xl">{'\u2709\uFE0F'}</div>
+          <h1 className="text-xl font-bold text-stone-900">Demande envoy&eacute;e</h1>
+          <p className="text-sm text-stone-500">
+            Votre demande d&apos;inscription a &eacute;t&eacute; transmise &agrave; l&apos;administrateur.
+            Vous recevrez un acc&egrave;s d&egrave;s que votre compte sera valid&eacute;.
+          </p>
+          <Link href="/login" className="inline-block text-sm text-blue-600 hover:underline">
+            Retour &agrave; la connexion
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (
