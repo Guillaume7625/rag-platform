@@ -74,9 +74,9 @@ def approve_user(user_id: str, token: str, db: Session = Depends(get_db)) -> str
             "<h2>Lien invalide</h2><p>Ce lien d'approbation n'est pas valide.</p>",
             status_code=403,
         )
-    import uuid
+    import uuid as _uuid
 
-    user = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+    user = db.query(User).filter(User.id == _uuid.UUID(user_id)).first()
     if not user:
         return HTMLResponse("<h2>Utilisateur introuvable</h2>", status_code=404)
     if user.is_active:
