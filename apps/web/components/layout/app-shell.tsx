@@ -14,7 +14,8 @@ const NAV = [
   { href: '/documents', label: 'Documents', emoji: '\u{1F4C4}' },
   { href: '/playground', label: 'Playground', emoji: '\u26A1' },
   { href: '/analytics', label: 'Analytics', emoji: '\u{1F4CA}' },
-  { href: '/settings', label: 'Param\u00e8tres', emoji: '\u2699\uFE0F' },
+  { href: '/integrations', label: 'Intégrations', emoji: '\u{1F517}' },
+  { href: '/settings', label: 'Paramètres', emoji: '\u2699\uFE0F' },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -106,7 +107,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             onClick={handleLogout}
             className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-stone-600"
-            title="Se d\u00e9connecter"
+            title="Se déconnecter"
           >
             <LogOut size={14} />
           </button>

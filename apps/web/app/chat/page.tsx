@@ -142,6 +142,25 @@ export default function ChatPage() {
 
   function newConversation() { setMessages([]); setConversationId(undefined); }
 
+  async function loadConversation(id: string) {
+    setShowHistory(false);
+    setConversationId(id);
+    try {
+      const conv = await api.getConversation(id);
+      setMessages(conv.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        citations: m.citations,
+        confidence: m.confidence ?? undefined,
+        mode_used: m.mode_used ?? undefined,
+        message_id: m.id,
+        feedback: m.feedback as 1 | -1 | null,
+      })));
+    } catch {
+      setMessages([]);
+    }
+  }
+
   async function onSend(q?: string) {
     const query = q || input.trim();
     if (!query) return;
@@ -149,17 +168,67 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+
+    // Add placeholder assistant message for streaming.
+    const placeholderIdx = messages.length + 1;
+    setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+
     try {
-      const res = await api.chatQuery(query, conversationId);
-      setConversationId(res.conversation_id);
-      setMessages((prev) => [...prev, {
-        role: 'assistant', content: res.answer, citations: res.citations,
-        confidence: res.confidence, mode_used: res.mode_used, message_id: res.message_id,
-      }]);
+      let streamedText = '';
+      let meta: any = null;
+      let messageId: string | undefined;
+
+      for await (const event of api.chatStream(query, conversationId)) {
+        if (event.type === 'meta') {
+          meta = event;
+          setConversationId(event.conversation_id);
+        } else if (event.type === 'token') {
+          streamedText += event.text;
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: streamedText,
+              citations: meta?.citations,
+              confidence: meta?.confidence,
+              mode_used: meta?.mode,
+            };
+            return updated;
+          });
+        } else if (event.type === 'done') {
+          messageId = event.message_id;
+        } else if (event.type === 'error') {
+          streamedText += `\n\nErreur : ${event.text}`;
+        }
+      }
+
+      // Finalize message with message_id for feedback.
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          content: streamedText,
+          message_id: messageId,
+          citations: meta?.citations,
+          confidence: meta?.confidence,
+          mode_used: meta?.mode,
+        };
+        return updated;
+      });
+
       api.listConversations().then(setConversations).catch(() => {});
     } catch (err) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: `Erreur : ${(err as Error).message}` }]);
-    } finally { setLoading(false); }
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: `Erreur : ${(err as Error).message}`,
+        };
+        return updated;
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -178,7 +247,7 @@ export default function ChatPage() {
         {showHistory && conversations.length > 0 && (
           <div className="mb-3 max-h-40 overflow-y-auto rounded-lg border border-stone-200 bg-white p-1.5">
             {conversations.map((c) => (
-              <button key={c.id} onClick={() => { setConversationId(c.id); setMessages([]); setShowHistory(false); }}
+              <button key={c.id} onClick={() => loadConversation(c.id)}
                 className="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-stone-50">
                 <span className="truncate text-stone-600">{c.title || 'Sans titre'}</span>
                 <span className="shrink-0 text-stone-400 ml-2">{new Date(c.created_at).toLocaleDateString('fr-FR')}</span>

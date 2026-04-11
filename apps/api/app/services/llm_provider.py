@@ -52,6 +52,47 @@ class LLMProvider:
             log.error("llm.call_failed", error=str(e), model=model, provider=self.provider)
             return "[llm-error] The generation step failed. Please retry."
 
+    def stream_anthropic(self, system: str, user: str, large: bool = False):
+        """Yield text chunks from Anthropic streaming API."""
+        model = self.large if large else self.small
+        if not self._is_configured():
+            yield "[dev-stub] No LLM credentials configured."
+            return
+        with httpx.stream(
+            "POST",
+            self.ANTHROPIC_ENDPOINT,
+            headers={
+                "x-api-key": self.anthropic_key,
+                "anthropic-version": self.ANTHROPIC_VERSION,
+                "content-type": "application/json",
+            },
+            json={
+                "model": model,
+                "max_tokens": 2048,
+                "stream": True,
+                "system": system,
+                "messages": [{"role": "user", "content": user}],
+                "temperature": 0.1,
+            },
+            timeout=120.0,
+        ) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                import json as _json
+
+                try:
+                    event = _json.loads(line[6:])
+                except Exception:
+                    continue
+                if event.get("type") == "content_block_delta":
+                    text = event.get("delta", {}).get("text", "")
+                    if text:
+                        yield text
+                elif event.get("type") == "message_stop":
+                    break
+
     def _call_anthropic(self, system: str, user: str, model: str) -> str:
         resp = httpx.post(
             self.ANTHROPIC_ENDPOINT,
