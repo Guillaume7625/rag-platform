@@ -110,4 +110,23 @@ export const api = {
         created_at: string;
       }>
     >('/conversations'),
+  dashboardStats: () =>
+    request<{
+      documents: { total: number; indexed: number; failed: number };
+      conversations: { total: number; recent_7d: number };
+      messages: { total: number; recent_7d: number };
+      performance: { avg_latency_ms: number | null; avg_confidence: number | null };
+      recent_conversations: Array<{ id: string; title: string | null; created_at: string | null }>;
+    }>('/stats/dashboard'),
+  getDocumentChunks: (id: string) =>
+    request<{
+      chunks: Array<{
+        id: string;
+        order_index: number;
+        section_title: string | null;
+        content: string;
+        token_count: number;
+        page: number | null;
+      }>;
+    }>(`/documents/${id}/chunks`),
 };

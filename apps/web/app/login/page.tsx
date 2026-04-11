@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       const res = await api.login(email, password);
       window.localStorage.setItem('rag_token', res.access_token);
-      router.push('/chat');
+      router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Identifiants incorrects');
     } finally {

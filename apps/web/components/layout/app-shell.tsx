@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MessageSquare, FileText, Settings, LogOut, Menu, X } from 'lucide-react';
+import { MessageSquare, FileText, Settings, LogOut, Menu, X, LayoutDashboard, BarChart3, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 
 const NAV = [
+  { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/chat', label: 'Chat', icon: MessageSquare },
   { href: '/documents', label: 'Documents', icon: FileText },
+  { href: '/playground', label: 'Playground', icon: Zap },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/settings', label: 'Paramètres', icon: Settings },
 ];
 
