@@ -40,7 +40,7 @@ export default function DashboardPage() {
         {/* Title */}
         <div>
           <h1 className="text-3xl font-bold text-stone-900">{'\u{1F3E0}'} Tableau de bord</h1>
-          <p className="mt-1 text-stone-500">Vue d&apos;ensemble de votre espace de travail</p>
+          <p className="mt-1 text-stone-500">Vue d{"'"}ensemble de votre espace de travail</p>
         </div>
 
         {error && <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 border border-red-100">{error}</div>}
@@ -58,7 +58,7 @@ export default function DashboardPage() {
                 <div key={kpi.label} className="rounded-lg border border-stone-200/80 bg-white p-4 hover:bg-stone-50 transition-colors">
                   <div className="text-lg mb-1">{kpi.emoji}</div>
                   <div className="text-2xl font-bold text-stone-900">{kpi.value}</div>
-                  <div className="text-xs text-stone-500 mt-0.5">{kpi.label} &middot; {kpi.sub}</div>
+                  <div className="text-xs text-stone-500 mt-0.5">{kpi.label} · {kpi.sub}</div>
                 </div>
               ))}
             </div>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Recent conversations */}
               <div>
-                <h2 className="text-sm font-medium text-stone-500 mb-3">{'\u{1F4AC}'} Conversations r&eacute;centes</h2>
+                <h2 className="text-sm font-medium text-stone-500 mb-3">{'\u{1F4AC}'} Conversations récentes</h2>
                 <div className="space-y-1">
                   {data.recent_conversations.length === 0 ? (
                     <p className="text-sm text-stone-400 py-4">Aucune conversation</p>
@@ -114,8 +114,8 @@ export default function DashboardPage() {
             {/* Failed docs alert */}
             {data.documents.failed > 0 && (
               <div className="rounded-lg bg-amber-50 border border-amber-200/60 px-4 py-3 text-sm text-amber-800">
-                {'\u26A0\uFE0F'} {data.documents.failed} document{data.documents.failed > 1 ? 's' : ''} en erreur &mdash;{' '}
-                <Link href="/documents" className="underline">voir les d&eacute;tails</Link>
+                {'\u26A0\uFE0F'} {data.documents.failed} document{data.documents.failed > 1 ? 's' : ''} en erreur —{' '}
+                <Link href="/documents" className="underline">voir les détails</Link>
               </div>
             )}
           </>

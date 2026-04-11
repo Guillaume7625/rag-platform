@@ -43,13 +43,13 @@ export default function RegisterPage() {
       <main className="flex min-h-screen items-center justify-center px-6">
         <div className="max-w-sm text-center space-y-4">
           <div className="text-5xl">{'\u2709\uFE0F'}</div>
-          <h1 className="text-xl font-bold text-stone-900">Demande envoy&eacute;e</h1>
+          <h1 className="text-xl font-bold text-stone-900">Demande envoyée</h1>
           <p className="text-sm text-stone-500">
-            Votre demande d&apos;inscription a &eacute;t&eacute; transmise &agrave; l&apos;administrateur.
-            Vous recevrez un acc&egrave;s d&egrave;s que votre compte sera valid&eacute;.
+            Votre demande d{"'"}inscription a été transmise à l{"'"}administrateur.
+            Vous recevrez un accès dès que votre compte sera validé.
           </p>
           <Link href="/login" className="inline-block text-sm text-blue-600 hover:underline">
-            Retour &agrave; la connexion
+            Retour à la connexion
           </Link>
         </div>
       </main>
@@ -61,8 +61,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="text-4xl mb-3">{'\u2728'}</div>
-          <h1 className="text-xl font-bold text-stone-900">Cr&eacute;er un compte</h1>
-          <p className="mt-1 text-sm text-stone-500">Commencez &agrave; explorer vos documents</p>
+          <h1 className="text-xl font-bold text-stone-900">Créer un compte</h1>
+          <p className="mt-1 text-sm text-stone-500">Commencez à explorer vos documents</p>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-3">
@@ -94,7 +94,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              placeholder="Min. 8 caract&egrave;res"
+              placeholder="Min. 8 caractères"
               minLength={8}
               required
             />
@@ -107,12 +107,12 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Cr&eacute;ation...' : 'Cr&eacute;er mon compte'}
+            {loading ? 'Création...' : 'Créer mon compte'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-stone-500">
-          D&eacute;j&agrave; un compte ?{' '}
+          Déjà un compte ?{' '}
           <Link href="/login" className="text-blue-600 hover:underline">
             Se connecter
           </Link>

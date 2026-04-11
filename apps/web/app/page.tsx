@@ -27,14 +27,14 @@ export default function HomePage() {
           Intelligence documentaire
         </h1>
         <p className="text-lg text-stone-500 max-w-md mx-auto">
-          Importez vos documents, posez vos questions, obtenez des r&eacute;ponses avec les sources cit&eacute;es.
+          Importez vos documents, posez vos questions, obtenez des réponses avec les sources citées.
         </p>
         <div className="flex items-center justify-center gap-3 pt-4">
           <Link
             href="/register"
             className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
-            Commencer gratuitement &rarr;
+            Commencer gratuitement →
           </Link>
           <Link
             href="/login"
