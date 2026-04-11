@@ -16,10 +16,19 @@ from app.services.llm_provider import get_llm
 log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "Tu es un assistant précis et rigoureux. Réponds à la question de l'utilisateur "
+    "Tu es un assistant pr\u00e9cis et rigoureux. R\u00e9ponds \u00e0 la question de l'utilisateur "
     "en utilisant UNIQUEMENT le contexte fourni. Cite tes sources avec leur identifiant [n]. "
-    "Si plusieurs documents sont fournis dans le contexte, couvre-les tous dans ta réponse. "
-    "Si le contexte ne contient pas la réponse, dis que tu ne sais pas."
+    "Si plusieurs documents sont fournis dans le contexte, couvre-les tous dans ta r\u00e9ponse. "
+    "Si le contexte ne contient pas la r\u00e9ponse, dis que tu ne sais pas."
+)
+
+CLARIFICATION_PROMPT = (
+    "Le contexte fourni ne permet pas de r\u00e9pondre avec certitude \u00e0 la question. "
+    "G\u00e9n\u00e8re une r\u00e9ponse partielle bas\u00e9e sur ce que tu as trouv\u00e9, puis pose "
+    "1 \u00e0 2 questions de clarification \u00e0 l'utilisateur pour affiner la recherche. "
+    "Formate les questions en gras \u00e0 la fin de ta r\u00e9ponse, pr\u00e9c\u00e9d\u00e9es de "
+    "'\U0001f50d Pour affiner ma r\u00e9ponse :'. "
+    "Cite tes sources avec [n]."
 )
 
 
@@ -170,13 +179,17 @@ class GenerationService:
                 )
             )
 
+        # Compute confidence BEFORE generating to choose the right prompt.
+        confidence = self._compute_confidence(reranked)
+
+        # Use clarification prompt if confidence is low.
+        system = CLARIFICATION_PROMPT if confidence < 0.70 else SYSTEM_PROMPT
+
         user_prompt = (
             f"Question:\n{query}\n\n"
             f"Context:\n" + "\n\n".join(context_blocks)
         )
-        answer = self.llm.complete(system=SYSTEM_PROMPT, user=user_prompt, large=large)
-
-        confidence = self._compute_confidence(reranked)
+        answer = self.llm.complete(system=system, user=user_prompt, large=large)
 
         return GenerationResult(answer=answer, citations=citations, confidence=confidence)
 
