@@ -1,4 +1,5 @@
 # Production image for the Celery ingestion worker.
+# Optimized for CPU-only VPS (no CUDA/triton).
 
 FROM python:3.12-slim AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,7 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
   && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml ./
 COPY app ./app
-RUN pip install --upgrade pip && pip wheel --wheel-dir /wheels -e .
+# Install CPU-only torch first to prevent docling from pulling CUDA deps
+RUN pip install --upgrade pip \
+  && pip install torch --index-url https://download.pytorch.org/whl/cpu \
+  && pip wheel --wheel-dir /wheels -e .
 
 FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -24,8 +28,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /wheels /wheels
 COPY pyproject.toml ./
+# Install CPU torch first, then project deps from wheels
 RUN pip install --upgrade pip \
-  && pip install --no-index --find-links=/wheels rag-worker \
+  && pip install torch --index-url https://download.pytorch.org/whl/cpu \
+  && pip install --find-links=/wheels rag-worker \
   && rm -rf /wheels
 
 COPY app ./app
