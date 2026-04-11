@@ -118,6 +118,11 @@ export const api = {
       performance: { avg_latency_ms: number | null; avg_confidence: number | null };
       recent_conversations: Array<{ id: string; title: string | null; created_at: string | null }>;
     }>('/stats/dashboard'),
+  sendFeedback: (messageId: string, value: 1 | -1 | 0) =>
+    request<{ message_id: string; feedback: number | null }>(`/conversations/messages/${messageId}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ value }),
+    }),
   getDocumentChunks: (id: string) =>
     request<{
       chunks: Array<{

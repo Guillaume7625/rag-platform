@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { UserPlus } from 'lucide-react';
 import { api } from '@/lib/api-client';
 
 export default function RegisterPage() {
@@ -23,38 +22,36 @@ export default function RegisterPage() {
       window.localStorage.setItem('rag_token', res.access_token);
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
+      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-50 to-white px-6">
-      <div className="w-full max-w-sm animate-slide-up">
+    <main className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-sm font-bold text-white shadow-lg shadow-brand-600/25">
-            R
-          </div>
-          <h1 className="text-xl font-semibold text-slate-900">Créer un compte</h1>
-          <p className="mt-1 text-sm text-slate-500">Commencez à explorer vos documents</p>
+          <div className="text-4xl mb-3">{'\u2728'}</div>
+          <h1 className="text-xl font-bold text-stone-900">Cr&eacute;er un compte</h1>
+          <p className="mt-1 text-sm text-stone-500">Commencez &agrave; explorer vos documents</p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Nom complet</label>
+        <form onSubmit={onSubmit} className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Nom complet</label>
             <input
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               type="text"
               placeholder="Jean Dupont"
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Email</label>
+          <div>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Email</label>
             <input
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
@@ -62,40 +59,33 @@ export default function RegisterPage() {
               required
             />
           </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">Mot de passe</label>
+          <div>
+            <label className="text-xs font-medium text-stone-500 uppercase tracking-wide">Mot de passe</label>
             <input
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm transition-all duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+              className="mt-1 w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              placeholder="Min. 8 caractères"
+              placeholder="Min. 8 caract&egrave;res"
               minLength={8}
               required
             />
           </div>
           {error && (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>
+            <div className="rounded-md bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-600">{error}</div>
           )}
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all duration-150 hover:bg-brand-700 hover:shadow-md disabled:opacity-50"
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {loading ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-            ) : (
-              <>
-                <UserPlus size={16} />
-                Créer mon compte
-              </>
-            )}
+            {loading ? 'Cr&eacute;ation...' : 'Cr&eacute;er mon compte'}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <span className="text-sm text-slate-500">Déjà un compte ? </span>
-          <Link href="/login" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+        <div className="mt-6 text-center text-sm text-stone-500">
+          D&eacute;j&agrave; un compte ?{' '}
+          <Link href="/login" className="text-blue-600 hover:underline">
             Se connecter
           </Link>
         </div>

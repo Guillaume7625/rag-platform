@@ -1,3 +1,4 @@
+import logging
 import time
 
 from fastapi import APIRouter, Depends
@@ -14,6 +15,8 @@ from app.services.query_expansion_service import get_query_expansion
 from app.services.query_router_service import decide_mode, decompose
 from app.services.rerank_service import get_reranker
 from app.services.retrieval_service import get_retrieval
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -66,7 +69,8 @@ def chat_query(
         reranked and reranked[0].get("rerank_score", 0.0) < 0.25
     )
     t_gen = time.time()
-    # Pass all reranked chunks — _select_context handles diversity + budget
+    # Pass all reranked chunks. Generation service handles diversity, budget,
+    # and will switch to clarification prompt if confidence < 70%.
     gen = generator.pack_and_generate(db, payload.query, reranked, large=large)
     t_gen_end = time.time()
 
