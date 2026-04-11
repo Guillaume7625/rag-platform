@@ -80,7 +80,7 @@ class GenerationService:
     def __init__(self) -> None:
         self.llm = get_llm()
 
-    def _select_context(
+    def select_context(
         self,
         reranked: list[dict[str, Any]],
         db: Session,
@@ -156,7 +156,7 @@ class GenerationService:
         return selected
 
     @staticmethod
-    def _compute_confidence(reranked: list[dict[str, Any]]) -> float:
+    def compute_confidence(reranked: list[dict[str, Any]]) -> float:
         """3-signal confidence: top score, spread, and high-scoring density."""
         if not reranked:
             return 0.0
@@ -177,7 +177,7 @@ class GenerationService:
         large: bool = False,
     ) -> GenerationResult:
         # Dynamic context selection within token budget.
-        selected = self._select_context(reranked, db)
+        selected = self.select_context(reranked, db)
 
         # Load parent content + document metadata from Postgres.
         parent_ids = [uuid.UUID(r["payload"]["parent_id"]) for r in selected if r["payload"].get("parent_id")]
@@ -217,7 +217,7 @@ class GenerationService:
             )
 
         # Compute confidence BEFORE generating to choose the right prompt.
-        confidence = self._compute_confidence(reranked)
+        confidence = self.compute_confidence(reranked)
 
         # Use clarification prompt if confidence is low.
         system = CLARIFICATION_PROMPT if confidence < 0.70 else SYSTEM_PROMPT

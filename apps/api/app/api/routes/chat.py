@@ -68,7 +68,7 @@ def _build_context(
     generator: object,
 ) -> tuple[list[str], list[dict]]:
     """Build context blocks and citations from reranked chunks."""
-    selected = generator._select_context(reranked, db)
+    selected = generator.select_context(reranked, db)
 
     parent_ids = [
         uuid.UUID(r["payload"]["parent_id"])
@@ -227,7 +227,7 @@ def chat_stream(
 
     # Build context.
     context_blocks, citations = _build_context(db, result.reranked, generator)
-    confidence = generator._compute_confidence(result.reranked)
+    confidence = generator.compute_confidence(result.reranked)
     system = CLARIFICATION_PROMPT if confidence < 0.70 else SYSTEM_PROMPT
     user_prompt = f"Question:\n{payload.query}\n\nContext:\n" + "\n\n".join(context_blocks)
 
@@ -275,4 +275,11 @@ def chat_stream(
 
         yield f"data: {json.dumps({'type': 'done', 'message_id': str(msg.id), 'latency_ms': latency_ms})}\n\n"
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )

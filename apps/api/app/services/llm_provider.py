@@ -54,6 +54,8 @@ class LLMProvider:
 
     def stream_anthropic(self, system: str, user: str, large: bool = False):
         """Yield text chunks from Anthropic streaming API."""
+        import json as _json
+
         model = self.large if large else self.small
         if not self._is_configured():
             yield "[dev-stub] No LLM credentials configured."
@@ -77,21 +79,24 @@ class LLMProvider:
             timeout=120.0,
         ) as resp:
             resp.raise_for_status()
-            for line in resp.iter_lines():
-                if not line.startswith("data: "):
-                    continue
-                import json as _json
-
-                try:
-                    event = _json.loads(line[6:])
-                except Exception:
-                    continue
-                if event.get("type") == "content_block_delta":
-                    text = event.get("delta", {}).get("text", "")
-                    if text:
-                        yield text
-                elif event.get("type") == "message_stop":
-                    break
+            buffer = ""
+            for chunk in resp.iter_bytes():
+                buffer += chunk.decode("utf-8", errors="replace")
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    line = line.strip()
+                    if not line.startswith("data: "):
+                        continue
+                    try:
+                        event = _json.loads(line[6:])
+                    except Exception:
+                        continue
+                    if event.get("type") == "content_block_delta":
+                        text = event.get("delta", {}).get("text", "")
+                        if text:
+                            yield text
+                    elif event.get("type") == "message_stop":
+                        return
 
     def _call_anthropic(self, system: str, user: str, model: str) -> str:
         resp = httpx.post(

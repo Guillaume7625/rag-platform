@@ -12,10 +12,10 @@ class Citation(BaseModel):
 
 
 class ChatQueryRequest(BaseModel):
-    query: str
+    query: str = Field(min_length=1, max_length=2000, description="Question en langage naturel")
     conversation_id: UUID | None = None
     filters: dict = Field(default_factory=dict)
-    force_mode: str | None = None  # "standard" | "deep"
+    force_mode: str | None = Field(None, pattern="^(standard|deep)$")
 
 
 class ChatQueryResponse(BaseModel):
