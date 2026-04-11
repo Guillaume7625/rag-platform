@@ -61,13 +61,13 @@ def chat_query(
     t_rerank = time.time()
     reranked = reranker.rerank(payload.query, candidates)[: settings.rerank_top_k]
     t_rerank_end = time.time()
-    top_context = reranked[: settings.context_top_k]
 
     large = mode == "deep" or bool(
-        top_context and top_context[0].get("rerank_score", 0.0) < 0.25
+        reranked and reranked[0].get("rerank_score", 0.0) < 0.25
     )
     t_gen = time.time()
-    gen = generator.pack_and_generate(db, payload.query, top_context, large=large)
+    # Pass all reranked chunks — _select_context handles diversity + budget
+    gen = generator.pack_and_generate(db, payload.query, reranked, large=large)
     t_gen_end = time.time()
 
     # Persist conversation + message.
