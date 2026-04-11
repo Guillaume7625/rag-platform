@@ -14,8 +14,7 @@ const NAV = [
   { href: '/documents', label: 'Documents', emoji: '\u{1F4C4}' },
   { href: '/playground', label: 'Playground', emoji: '\u26A1' },
   { href: '/analytics', label: 'Analytics', emoji: '\u{1F4CA}' },
-  { href: '/integrations', label: 'Intégrations', emoji: '\u{1F517}' },
-  { href: '/settings', label: 'Paramètres', emoji: '\u2699\uFE0F' },
+{ href: '/settings', label: 'Paramètres', emoji: '\u2699\uFE0F' },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
