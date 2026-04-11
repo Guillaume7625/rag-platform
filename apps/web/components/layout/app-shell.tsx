@@ -3,18 +3,18 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MessageSquare, FileText, Settings, LogOut, Menu, X, LayoutDashboard, BarChart3, Zap } from 'lucide-react';
+import { LogOut, Menu, X, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 import { ErrorBoundary } from '@/components/error-boundary';
 
 const NAV = [
-  { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { href: '/chat', label: 'Chat', icon: MessageSquare },
-  { href: '/documents', label: 'Documents', icon: FileText },
-  { href: '/playground', label: 'Playground', icon: Zap },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/settings', label: 'Paramètres', icon: Settings },
+  { href: '/dashboard', label: 'Tableau de bord', emoji: '\u{1F3E0}' },
+  { href: '/chat', label: 'Chat', emoji: '\u{1F4AC}' },
+  { href: '/documents', label: 'Documents', emoji: '\u{1F4C4}' },
+  { href: '/playground', label: 'Playground', emoji: '\u26A1' },
+  { href: '/analytics', label: 'Analytics', emoji: '\u{1F4CA}' },
+  { href: '/settings', label: 'Param\u00e8tres', emoji: '\u2699\uFE0F' },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />
       </div>
     );
   }
@@ -55,17 +55,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const initials = (user?.full_name || user?.email || '?')[0].toUpperCase();
 
   const sidebar = (
-    <div className="flex h-full w-60 flex-col bg-slate-900">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
-          R
+    <div className="flex h-full w-60 flex-col bg-stone-50 border-r border-stone-200/60">
+      {/* Workspace header */}
+      <div className="flex items-center gap-2 px-3 py-3">
+        <div className="flex h-6 w-6 items-center justify-center rounded text-sm">
+          {initials}
         </div>
-        <span className="text-sm font-semibold text-white">RAG Platform</span>
+        <span className="text-sm font-medium text-stone-800 truncate">
+          {user?.full_name || 'Mon espace'}
+        </span>
       </div>
 
-      <nav className="flex-1 space-y-0.5 px-3">
+      {/* Nav */}
+      <nav className="flex-1 space-y-0.5 px-2 py-1">
         {NAV.map((n) => {
-          const Icon = n.icon;
           const active = pathname?.startsWith(n.href);
           return (
             <Link
@@ -73,36 +76,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={n.href}
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-150',
+                'group flex items-center gap-2.5 rounded-md px-2 py-1 text-sm transition-colors duration-75',
                 active
-                  ? 'bg-white/10 text-white font-medium'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-slate-200',
+                  ? 'bg-stone-200/70 text-stone-900'
+                  : 'text-stone-500 hover:bg-stone-200/40 hover:text-stone-800',
               )}
             >
-              <Icon size={18} className={active ? 'text-brand-400' : ''} />
-              {n.label}
+              <span className="text-base leading-none w-5 text-center">{n.emoji}</span>
+              <span className="truncate">{n.label}</span>
+              {active && (
+                <ChevronRight size={12} className="ml-auto text-stone-400" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-white/10 px-3 py-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
+      {/* User footer */}
+      <div className="border-t border-stone-200/60 px-2 py-2">
+        <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-stone-200 text-[10px] font-medium text-stone-600">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-slate-200">
-              {user?.full_name || 'Utilisateur'}
+            <div className="truncate text-xs font-medium text-stone-700">
+              {user?.email}
             </div>
-            <div className="truncate text-xs text-slate-500">{user?.email}</div>
           </div>
           <button
             onClick={handleLogout}
-            className="rounded-md p-1.5 text-slate-500 transition-colors hover:bg-white/10 hover:text-red-400"
-            title="Se déconnecter"
+            className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-200/60 hover:text-stone-600"
+            title="Se d\u00e9connecter"
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
           </button>
         </div>
       </div>
@@ -110,13 +116,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="hidden md:block">{sidebar}</aside>
+    <div className="flex min-h-screen">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:block shrink-0">
+        {sidebar}
+      </aside>
 
+      {/* Mobile overlay */}
       {sidebarOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden animate-fade-in"
+            className="fixed inset-0 z-40 bg-black/20 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
           <aside className="fixed inset-y-0 left-0 z-50 md:hidden animate-slide-in">
@@ -125,17 +135,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+      {/* Main content */}
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Mobile header */}
+        <header className="flex items-center gap-3 border-b border-stone-200/60 bg-white px-4 py-2.5 md:hidden">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"
+            className="rounded p-1 text-stone-500 hover:bg-stone-100"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
-          <span className="text-sm font-semibold">RAG Platform</span>
+          <span className="text-sm font-medium text-stone-700">RAG Platform</span>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 px-8 py-6 md:px-12 md:py-8 max-w-5xl">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
