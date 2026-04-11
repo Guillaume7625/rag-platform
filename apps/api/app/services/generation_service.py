@@ -16,9 +16,10 @@ from app.services.llm_provider import get_llm
 log = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
-    "You are a careful assistant. Answer the user's question using ONLY the "
-    "provided context. Cite sources by their [n] identifier. If the context "
-    "does not contain the answer, say you don't know."
+    "Tu es un assistant précis et rigoureux. Réponds à la question de l'utilisateur "
+    "en utilisant UNIQUEMENT le contexte fourni. Cite tes sources avec leur identifiant [n]. "
+    "Si plusieurs documents sont fournis dans le contexte, couvre-les tous dans ta réponse. "
+    "Si le contexte ne contient pas la réponse, dis que tu ne sais pas."
 )
 
 
@@ -38,23 +39,55 @@ class GenerationService:
         reranked: list[dict[str, Any]],
         db: Session,
     ) -> list[dict[str, Any]]:
-        """Select parent chunks within token budget, dedup by parent_id."""
-        selected: list[dict[str, Any]] = []
-        seen_parents: set[str] = set()
-        budget = settings.context_token_budget
-        accumulated = 0
+        """Select parent chunks with document diversity (round-robin).
 
+        Instead of picking the top N chunks (which often come from one document),
+        we distribute selection across documents: best chunk from each doc first,
+        then second-best from each doc, etc. This ensures multi-document coverage
+        while still respecting token budget and score thresholds.
+        """
+        if not reranked:
+            return []
+
+        # Group candidates by document_id, preserving rerank order within each doc.
+        from collections import OrderedDict
+
+        doc_buckets: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
+        seen_parents: set[str] = set()
         for r in reranked:
             pid = r["payload"].get("parent_id")
             if pid in seen_parents:
                 continue
+            seen_parents.add(pid)
+            doc_id = r["payload"].get("document_id", "unknown")
+            if doc_id not in doc_buckets:
+                doc_buckets[doc_id] = []
+            doc_buckets[doc_id].append(r)
 
-            # Check score threshold (skip very low-scoring candidates).
+        # Round-robin: pick one chunk from each document in turn.
+        ordered: list[dict[str, Any]] = []
+        max_depth = max((len(v) for v in doc_buckets.values()), default=0)
+        for depth in range(max_depth):
+            for doc_id, chunks in doc_buckets.items():
+                if depth < len(chunks):
+                    ordered.append(chunks[depth])
+
+        # Fill selected list within budget.
+        # Guarantee: at least 1 chunk from each document (diversity first).
+        selected: list[dict[str, Any]] = []
+        seen_docs_in_selected: set[str] = set()
+        budget = settings.context_token_budget
+        accumulated = 0
+
+        for r in ordered:
             score = r.get("rerank_score", 0.0)
-            if selected and score < settings.context_score_threshold:
-                break
+            doc_id = r["payload"].get("document_id", "unknown")
+            doc_already_covered = doc_id in seen_docs_in_selected
+            # Only apply score threshold if this doc is already represented
+            if doc_already_covered and score < settings.context_score_threshold:
+                continue
 
-            # Look up parent token count from DB if available.
+            pid = r["payload"].get("parent_id")
             token_count = 0
             if pid:
                 parent = (
@@ -62,14 +95,13 @@ class GenerationService:
                     .filter(DocumentChunkParent.id == uuid.UUID(pid))
                     .first()
                 )
-                token_count = parent[0] if parent else 200  # estimate
+                token_count = parent[0] if parent else 200
 
-            # Respect budget (always include at least one).
             if selected and accumulated + token_count > budget:
                 break
 
-            seen_parents.add(pid)
             selected.append(r)
+            seen_docs_in_selected.add(doc_id)
             accumulated += token_count
 
             if len(selected) >= settings.context_max_parents:
