@@ -10,6 +10,7 @@ from app.db.models.user import User
 from app.db.session import get_db
 from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut, UserUpdate
 from app.services.auth_service import get_auth_service
+from app.services.email_service import notify_new_registration
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -36,6 +37,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
     membership = Membership(user_id=user.id, tenant_id=tenant.id, role="admin")
     db.add(membership)
     db.commit()
+    notify_new_registration(payload.email, payload.full_name)
     svc = get_auth_service()
     token = svc.issue_token(user, membership)
     return TokenResponse(access_token=token)

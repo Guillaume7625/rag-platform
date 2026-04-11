@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     context_score_threshold: float = 0.15
     context_max_parents: int = 10
 
+    # --- SMTP notifications ---
+    smtp_host: str = "ssl0.ovh.net"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    notification_email: str = ""
+
     # --- Celery ---
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"
