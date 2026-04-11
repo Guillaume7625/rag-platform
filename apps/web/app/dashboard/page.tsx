@@ -60,7 +60,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">Tableau de bord</h1>
-            <p className="mt-1 text-sm text-slate-500">Vue d'ensemble de votre espace</p>
+            <p className="mt-1 text-sm text-slate-500">Vue d&apos;ensemble de votre espace</p>
           </div>
           <div className="flex gap-2">
             <Link href="/documents" className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
