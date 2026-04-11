@@ -36,4 +36,5 @@ class Message(Base):
     confidence: Mapped[float | None] = mapped_column(Float)
     mode_used: Mapped[str | None] = mapped_column(String(16))
     latency_ms: Mapped[int | None] = mapped_column(Integer)
+    feedback: Mapped[int | None] = mapped_column(Integer)  # 1 = thumbs up, -1 = thumbs down
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

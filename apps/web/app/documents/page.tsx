@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { Upload, FileText, RefreshCw, Trash2, Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { api } from '@/lib/api-client';
@@ -182,7 +183,7 @@ export default function DocumentsPage() {
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100">
                           <FileText size={14} className="text-slate-500" />
                         </div>
-                        <span className="font-medium text-slate-900">{d.name}</span>
+                        <Link href={`/documents/${d.id}`} className="font-medium text-slate-900 hover:text-blue-600 hover:underline">{d.name}</Link>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-slate-500">{d.mime_type?.split('/').pop() || '-'}</td>
