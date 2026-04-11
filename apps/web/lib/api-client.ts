@@ -110,6 +110,22 @@ export const api = {
         created_at: string;
       }>
     >('/conversations'),
+  getConversation: (id: string) =>
+    request<{
+      id: string;
+      title: string | null;
+      created_at: string;
+      messages: Array<{
+        id: string;
+        role: 'user' | 'assistant';
+        content: string;
+        citations: Array<{ document_name: string; page: number | null; excerpt: string }>;
+        confidence: number | null;
+        mode_used: string | null;
+        feedback: number | null;
+        created_at: string;
+      }>;
+    }>(`/conversations/${id}`),
   dashboardStats: () =>
     request<{
       documents: { total: number; indexed: number; failed: number };
@@ -118,6 +134,30 @@ export const api = {
       performance: { avg_latency_ms: number | null; avg_confidence: number | null };
       recent_conversations: Array<{ id: string; title: string | null; created_at: string | null }>;
     }>('/stats/dashboard'),
+  chatStream: async function* (query: string, conversation_id?: string) {
+    const res = await fetch(`${BASE}/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ query, conversation_id }),
+    });
+    if (!res.ok) throw new Error('stream failed');
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('no reader');
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try { yield JSON.parse(line.slice(6)); } catch {}
+        }
+      }
+    }
+  },
   sendFeedback: (messageId: string, value: 1 | -1 | 0) =>
     request<{ message_id: string; feedback: number | null }>(`/conversations/messages/${messageId}/feedback`, {
       method: 'POST',
